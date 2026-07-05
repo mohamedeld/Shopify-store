@@ -1,21 +1,33 @@
-{% assign first_product = collection.products.first %}
+<div class="px-4 py-8">
+  {% paginate collection.products by section.settings.number_of_product_per_page %}
+    <h1 class="text-3xl text-center">{{ collection.name }}</h1>
+    <div class="max-w-6xl mx-auto">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-{% if first_product %}
-  {% assign first_variant = first_product.selected_or_first_available_variant %}
-  {% if first_variant %}
-    <form method="post" action="{{ routes.cart_add_url }}">
-      <input type="hidden" name="id" value="{{ first_variant.id }}">
-      <button type="submit">{{ 'sections.collection.add_first_product_to_cart' | t }}</button>
-    </form>
-  {% endif %}
-{% endif %}
+        {% for product in collection.products %}
+          {% render 'product-card'
+            , product: product %}
+        {% else %}
+          <p>There are no products inside of this collection</p>
+        {% endfor %}
+      </div>
+    </div>
 
-{% paginate collection.products by 6 %}
-  {% for product in collection.products %}
-    <a href="{{ product.url | within: collection }}">{{ product.title }}</a>
-    {% else %}
-        <p>There are no products inside of this collection</p>
-  {% endfor %}
+    {% render 'pagination'
+      , pagination: paginate %}
+  {% endpaginate %}
+</div>
 
-  {% render 'pagination', pagination:paginate %}
-{% endpaginate %}
+{% schema %}
+  {
+    "name": "Template Collection",
+    "settings": [
+      {
+        "type": "number",
+        "id": "number_of_product_per_page",
+        "default": 6,
+        "label": "Number of products per page"
+      }
+    ]
+  }
+{% endschema %}
