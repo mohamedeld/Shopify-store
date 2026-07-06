@@ -1,0 +1,23 @@
+{% case media.media_type %}
+    {% when "image" %}
+        
+        <img
+            src="{{ media | img_url: 'large' }}"
+            alt="{{ media.preview_image.alt | escape }}"
+            class="w-full h-full object-cover" />
+    {% when "video" %}
+        {{media |  video_tag: controls: true, class: 'w-full h-full object-cover'}}
+    
+    {% when "external_video" %}
+        {{media |  external_video_tag: controls: true, class: 'w-full h-full object-cover'}}
+    {% when "model" %}
+        <model-viewer
+            src="{{ media.preview_image | img_url: '1024x1024' }}"
+            alt="{{ media.alt | escape }}"
+            class="w-full h-full object-cover"
+            auto-rotate
+            camera-controls>
+        </model-viewer>
+    {% else %}
+        
+{% endcase %}
