@@ -27,13 +27,13 @@
         }
       },
       "block_order": [
-        "variant_selector",
         "title",
-        "checkout_buttons",
-        "quantity",
+        "vendor",
         "price",
+        "variant_selector",
+        "quantity",
         "description",
-        "vendor"
+        "checkout_buttons"
       ]
     }
   },
