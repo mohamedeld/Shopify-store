@@ -2,12 +2,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.js"></script>
 
-
-
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const swiper = new Swiper(".mySwiper", {
-
             spaceBetween: 10,
             direction: "horizontal",
             pagination: {
@@ -18,7 +15,6 @@
                 nextEl: ".swiper-button-next",
                 prevEl: ".swiper-button-prev",
             },
-
         });
     });
 </script>
@@ -38,7 +34,6 @@
         bottom: 9px !important;
         border-radius: 50% !important;
         height: 20px;
-
     }
 
     .swiper-button-prev::after,
@@ -53,6 +48,18 @@
 
     .product-information {
         height: fit-content;
+    }
+
+    [data-add-to-cart][disabled] {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .variant-unavailable-message {
+        display: none;
+        color: #b91c1c;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
     }
 </style>
 
@@ -80,121 +87,239 @@
                     <div class="swiper-pagination"></div>
                     <div class="swiper-button-prev"></div>
                     <div class="swiper-button-next"></div>
-
-                    <!-- If we need scrollbar -->
                     <div class="swiper-scrollbar"></div>
                 </div>
             </div>
         </div>
         <div class="product-information sticky top-5 p-2">
             {% form 'product', product %}
-            <input type="hidden" name="id" value="{{ product_price.id }}" />
+            <input type="hidden" name="id" value="{{ product_price.id }}" data-variant-id-input />
             {% for block in section.blocks %}
             {% case block.type %}
             {% when 'vendor' %}
-                <span class="text-xs text-gray-500">{{product.vendor}}</span>
+                <span class="text-xs text-gray-500">{{ product.vendor }}</span>
             {% when 'title' %}
-                <h1 class="text-3xl font-medium text-gray-500">{{product.title}}</h1>
+                <h1 class="text-3xl font-medium text-gray-500">{{ product.title }}</h1>
             {% when 'price' %}
-                <div class="my-3">
-
-                    <span class="text-base text-gray-500 line-through">{{product_price.compare_at_price | money}}</span>
-                    <span class="tex-lg text-gray-900">{{product_price.price | money}}</span>
-                    {% if product_price.price < product_price.compare_at_price %} <span
-                        class="px-5 py-1 text-sm font-bold bg-red-500 rounded-full text-white mx-4">Sale</span>
-                        {% endif %}
+                <div class="my-3" data-price-wrapper>
+                    <span class="text-base text-gray-500 line-through" data-compare-price
+                        style="{% if product_price.compare_at_price <= product_price.price %}display:none;{% endif %}">
+                        {{ product_price.compare_at_price | money }}
+                    </span>
+                    <span class="tex-lg text-gray-900" data-price>{{ product_price.price | money }}</span>
+                    <span class="px-5 py-1 text-sm font-bold bg-red-500 rounded-full text-white mx-4" data-sale-badge
+                        style="{% unless product_price.price < product_price.compare_at_price %}display:none;{% endunless %}">
+                        Sale
+                    </span>
                 </div>
             {% when 'variant_selector' %}
                 <div class="flex flex-col gap-2">
                     {% unless product.has_only_default_variant %}
-                    <div data-url="{{product.url}}" data-section="{{section.id}}" class="flex flex-col gap-4">
+                    <variant-selector data-section="{{ section.id }}" class="flex flex-col gap-4">
                         {% for option in product.options_with_values %}
                         <div class="flex flex-col gap-2">
-                            <label for="option-{{option.position}}"
-                                class="text-sm font-medium text-gray-500">{{option.name}}</label>
-                            <select name="options[{{option.name}}]" id="option-{{option.position}}"
+                            <label for="option-{{ option.position }}"
+                                class="text-sm font-medium text-gray-500">{{ option.name }}</label>
+                            <select name="options[{{ option.name }}]" id="option-{{ option.position }}"
                                 class="border border-gray-300 rounded-md p-2">
                                 {% for value in option.values %}
-                                <option value="{{value | escape}}" {% if option.selected_value==value %}
-                                    selected="selected" {% endif %}>{{value}}</option>
+                                <option value="{{ value | escape }}" {% if option.selected_value == value %}
+                                    selected="selected" {% endif %}>{{ value }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                         {% endfor %}
-                    </div>
+                        <p class="variant-unavailable-message" data-unavailable-message>
+                            This combination is currently unavailable.
+                        </p>
+                        <script type="application/json" data-product-json>
+                            {{ product | json }}
+                        </script>
+                    </variant-selector>
                     {% endunless %}
                 </div>
             {% when 'quantity' %}
                 <div class="flex flex-col gap-2 my-2">
-                    <label for="quantity-{{section.id}}" class="text-sm font-medium text-gray-500">Quantity</label>
-                    <input type="number" name="quantity" id="quantity-{{section.id}}" value="1" min="1"
+                    <label for="quantity-{{ section.id }}" class="text-sm font-medium text-gray-500">Quantity</label>
+                    <input type="number" name="quantity" id="quantity-{{ section.id }}" value="1" min="1"
                         class="border border-gray-300 rounded-md p-2 w-full" />
                 </div>
             {% when 'description' %}
-                <p class="text-gray-700 my-3">{{product.description}}</p>
-            
-                {% when 'checkout_buttons' %}
-                    <button type="submit" name="add"
-                    class="w-full px-6 py-4 bg-gray-900 text-white hover:bg-gray-700 rounded-sm my-2" {% if
-                    product_price.available==false %} disabled {% endif %}>
-                    {% if product_price.available == false %}
-                    Sold out
-                    {% else %}
-                    Add to Cart
-                    {% endif %}
+                <p class="text-gray-700 my-3">{{ product.description }}</p>
+            {% when 'checkout_buttons' %}
+                <button type="submit" name="add" data-add-to-cart
+                    class="w-full px-6 py-4 bg-gray-900 text-white hover:bg-gray-700 rounded-sm my-2"
+                    {% if product_price.available == false %} disabled {% endif %}>
+                    <span data-add-to-cart-label>
+                        {% if product_price.available == false %}
+                            Sold out
+                        {% else %}
+                            Add to Cart
+                        {% endif %}
+                    </span>
                 </button>
             {% else %}
-
             {% endcase %}
             {% endfor %}
-            <div class="flex flex-col gap-3">
-
-                {% endform %}
-            </div>
+            <div class="flex flex-col gap-3"></div>
+            {% endform %}
         </div>
     </div>
 
+    <script>
+        class VariantSelector extends HTMLElement {
+            constructor() {
+                super();
+                this.onVariantChange = this.onVariantChange.bind(this);
+                this.onQuantityChange = this.onQuantityChange.bind(this);
+            }
+
+            connectedCallback() {
+                const productJsonEl = this.querySelector('[data-product-json]');
+                try {
+                    this.productData = productJsonEl ? JSON.parse(productJsonEl.textContent) : null;
+                } catch (e) {
+                    console.error('VariantSelector: failed to parse product JSON', e);
+                    this.productData = null;
+                }
+                this.form = this.closest('form');
+                this.addEventListener('change', this.onVariantChange);
+
+                if (this.form) {
+                    this.quantityInput = this.form.querySelector("input[name='quantity']");
+                    if (this.quantityInput) {
+                        this.quantityInput.addEventListener('input', this.onQuantityChange);
+                        this.quantityInput.addEventListener('change', this.onQuantityChange);
+                    }
+                }
+
+                this.updateUiForCurrentSelection();
+            }
+
+            disconnectedCallback() {
+                this.removeEventListener('change', this.onVariantChange);
+                if (this.quantityInput) {
+                    this.quantityInput.removeEventListener('input', this.onQuantityChange);
+                    this.quantityInput.removeEventListener('change', this.onQuantityChange);
+                }
+            }
+
+            // Normalize so casing/whitespace differences don't break matching
+            normalize(value) {
+                return (value ?? '').toString().trim().toLowerCase();
+            }
+
+            getSelectedOptions() {
+                // Sort by option position so order always matches variant.options order,
+                // instead of relying on DOM insertion order.
+                const selects = Array.from(this.querySelectorAll("select[name^='options[']"));
+                return selects.map((select) => select.value);
+            }
+
+            findMatchingVariant(selectedOptions) {
+                if (!this.productData || !Array.isArray(this.productData.variants)) {
+                    return null;
+                }
+                const normalizedSelected = selectedOptions.map((v) => this.normalize(v));
+                return (
+                    this.productData.variants.find((variant) =>
+                        variant.options.every(
+                            (optionValue, index) =>
+                                this.normalize(optionValue) === normalizedSelected[index]
+                        )
+                    ) || null
+                );
+            }
+
+            getQuantity() {
+                if (!this.quantityInput) return 1;
+                const parsed = parseInt(this.quantityInput.value, 10);
+                return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+            }
+
+            onQuantityChange() {
+                this.updateUiForCurrentSelection();
+            }
+
+            onVariantChange() {
+                this.updateUiForCurrentSelection();
+            }
+
+            updateUiForCurrentSelection() {
+                const selectedOptions = this.getSelectedOptions();
+                const variant = this.findMatchingVariant(selectedOptions);
+                const quantity = this.getQuantity();
+
+                console.log('selectedOptions', selectedOptions, 'variant', variant);
+
+                if (!this.form) return;
+
+                const idInput = this.form.querySelector('[data-variant-id-input]');
+                const addToCartBtn = this.form.querySelector('[data-add-to-cart]');
+                const addToCartLabel = this.form.querySelector('[data-add-to-cart-label]');
+                const unavailableMsg = this.querySelector('[data-unavailable-message]');
+                const priceEl = this.form.querySelector('[data-price]');
+                const comparePriceEl = this.form.querySelector('[data-compare-price]');
+                const saleBadge = this.form.querySelector('[data-sale-badge]');
+
+                if (!variant) {
+                    // No variant matches this combination at all
+                    if (idInput) idInput.value = '';
+                    if (addToCartBtn) addToCartBtn.disabled = true;
+                    if (addToCartLabel) addToCartLabel.textContent = 'Unavailable';
+                    if (unavailableMsg) unavailableMsg.style.display = 'block';
+                    return;
+                }
+
+                if (unavailableMsg) unavailableMsg.style.display = 'none';
+                if (idInput) idInput.value = variant.id;
+
+                // Update price display using selected quantity
+                if (priceEl) {
+                    priceEl.textContent = this.formatMoney(variant.price * quantity);
+                }
+                if (comparePriceEl) {
+                    const showCompare = variant.compare_at_price > variant.price;
+                    comparePriceEl.style.display = showCompare ? '' : 'none';
+                    if (showCompare) {
+                        comparePriceEl.textContent = this.formatMoney(variant.compare_at_price * quantity);
+                    }
+                }
+                if (saleBadge) {
+                    saleBadge.style.display = variant.compare_at_price > variant.price ? '' : 'none';
+                }
+
+                // Update add-to-cart / sold out state
+                if (addToCartBtn) addToCartBtn.disabled = !variant.available;
+                if (addToCartLabel) {
+                    addToCartLabel.textContent = variant.available ? 'Add to Cart' : 'Sold out';
+                }
+            }
+
+            // Basic cents -> currency formatting fallback.
+            // Prefer Shopify.formatMoney if your theme already loads money_format.js.
+            formatMoney(cents) {
+                if (window.Shopify && typeof window.Shopify.formatMoney === 'function') {
+                    return window.Shopify.formatMoney(cents, window.theme?.moneyFormat);
+                }
+                return (cents / 100).toFixed(2);
+            }
+        }
+
+        customElements.define('variant-selector', VariantSelector);
+    </script>
 
     {% schema %}
     {
-    "name": "Product",
-    "blocks": [
-        {
-    "type":"title",
-    "name":"Title",
-    "limit": 1
-    },
-    {
-    "type":"vendor",
-    "name":"Vendor",
-    "limit": 1
-    },
-    
-    {
-    "type":"price",
-    "name":"Price",
-    "limit": 1
-    },
-    {
-    "type":"variant_selector",
-    "name":"Variant Selector",
-    "limit": 1
-    },
-    {
-    "type":"quantity",
-    "name":"Quantity",
-    "limit": 1
-    },
-    {
-    "type":"description",
-    "name":"Description",
-    "limit": 1
-    },
-    {
-    "type":"checkout_buttons",
-    "name":"Checkout Buttons",
-    "limit": 1
-    },
-    ]
+        "name": "Product",
+        "blocks": [
+            { "type": "title", "name": "Title", "limit": 1 },
+            { "type": "vendor", "name": "Vendor", "limit": 1 },
+            { "type": "price", "name": "Price", "limit": 1 },
+            { "type": "variant_selector", "name": "Variant Selector", "limit": 1 },
+            { "type": "quantity", "name": "Quantity", "limit": 1 },
+            { "type": "description", "name": "Description", "limit": 1 },
+            { "type": "checkout_buttons", "name": "Checkout Buttons", "limit": 1 }
+        ]
     }
     {% endschema %}
